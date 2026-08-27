@@ -39,3 +39,17 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+ROOT_URLCONF = 'config.urls'
+
+# DRF Sozlamalari
+REST_FRAMEWORK = {
+    'DEFAULT_RENDERER_CLASSES': [
+        'rest_framework.renderers.JSONRenderer',
+        'rest_framework.renderers.BrowsableAPIRenderer',
+    ],
+}
+
+# CORS - Desktop ilova so'rov yuborishi uchun
+CORS_ALLOW_ALL_ORIGINS = True
+
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
