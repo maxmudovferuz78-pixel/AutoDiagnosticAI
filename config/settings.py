@@ -11,3 +11,20 @@ DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
 ALLOWED_HOSTS = ['*']
 
+# Installed Apps qismiga qo'shamiz:
+INSTALLED_APPS = [
+    'django.contrib.admin',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.messages',
+    'django.contrib.staticfiles',
+
+    # Third party
+    'rest_framework',
+    'corsheaders',
+
+    # Local apps
+    'diagnostics',
+]
+
