@@ -50,11 +50,11 @@ def get_ai_diagnostic_analysis(car_model: str, dtc_codes: list, raw_text: str = 
 
     try:
         response = client.models.generate_content(
-            model='gemini-2.5-flash',  # Juda tez va aniq ishlaydigan model
+            model='gemini-3.6-flash',  # Model nomi yangilandi
             contents=user_prompt,
             config=types.GenerateContentConfig(
                 system_instruction=system_prompt,
-                response_mime_type="application/json",  # Aniq JSON qaytarishi uchun
+                response_mime_type="application/json",
                 temperature=0.2
             )
         )
