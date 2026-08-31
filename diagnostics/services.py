@@ -8,3 +8,23 @@ from django.conf import settings
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
 
+def get_ai_diagnostic_analysis(car_model: str, dtc_codes: list, raw_text: str = "") -> dict:
+    """
+    Gemini AI yordamida Scanmatik diagnostika natijalarini
+    o'zbek tilida professional tahlil qilib beradi.
+    """
+
+    system_prompt = """
+    Siz O'zbekiston avtomobil bozori bo'yicha professional avtoelektrik va diagnostik-muhandissiz.
+    Sizga avtomobil modeli, xatolik kodlari (DTC) va skanerdan olingan text beriladi.
+
+    Javobingizni har doim va FAQAT quyidagi JSON formatida qaytaring:
+    {
+        "status": "success",
+        "car_model": "Mashina modeli",
+        "translated_codes": [
+            {"code": "P0300", "description": "Ko'p silindrlarda yonish o'tkazib yuborildi"}
+        ],
+        "possible_causes": [
+            "1. Svecha yoki babina simlarida nosozlik (Cobalt/Gentra uchun eng ko'p uchraydi)",
+            "2. Yonilg'i bosimi pastligi yoki purkagichlar (forsunka) tiqilishi"
