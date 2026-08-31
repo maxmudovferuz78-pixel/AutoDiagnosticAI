@@ -42,3 +42,20 @@ def get_ai_diagnostic_analysis(car_model: str, dtc_codes: list, raw_text: str = 
     - Mahalliy bozor spetsifikatsiyasini (Cobalt, Gentra, Nexia, Damas, BYD, gaz-benzin tizimi) hisobga oling.
     """
 
+    user_prompt = f"""
+    Avtomobil modeli: {car_model if car_model else "Noma'lum"}
+    Xatolik kodlari: {', '.join(dtc_codes) if dtc_codes else "Mavjud emas"}
+    Ekrandagi xom matn: {raw_text}
+    """
+
+    try:
+        response = client.models.generate_content(
+            model='gemini-2.5-flash',  # Juda tez va aniq ishlaydigan model
+            contents=user_prompt,
+            config=types.GenerateContentConfig(
+                system_instruction=system_prompt,
+                response_mime_type="application/json",  # Aniq JSON qaytarishi uchun
+                temperature=0.2
+            )
+        )
+
