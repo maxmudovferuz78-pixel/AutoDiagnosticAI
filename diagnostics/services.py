@@ -59,3 +59,12 @@ def get_ai_diagnostic_analysis(car_model: str, dtc_codes: list, raw_text: str = 
             )
         )
 
+        # Qaytgan javobni JSON shakliga o'tkazamiz
+        result_json = json.loads(response.text)
+        return result_json
+
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"AI tahlilida xatolik yuz berdi: {str(e)}"
+        }
