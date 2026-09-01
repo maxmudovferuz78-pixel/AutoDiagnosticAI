@@ -28,3 +28,14 @@ def capture_and_analyze():
     # 3. Regex orqali DTC xatolik kodlarini (Masalan: P0300, P0171, C0035, U0100) ajratib olamiz
     dtc_pattern = r'[P|C|B|U]\d{4}'
     found_codes = list(set(re.findall(dtc_pattern, raw_text)))
+
+    print(f"[✓] Topilgan DTC kodlar: {found_codes}")
+    print(f"[✓] Ekrandan o'qilgan xom matn qisqartmasi: {raw_text[:100]}...")
+
+    # 4. Django REST Backend API'ga so'rov yuboramiz
+    payload = {
+        "car_model": "Ekrandan aniqlanmoqda",  # Kelajakda avto-modelni ham OCR qilamiz
+        "dtc_codes": found_codes,
+        "raw_text": raw_text
+    }
+
