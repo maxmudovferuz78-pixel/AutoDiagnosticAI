@@ -63,3 +63,18 @@ def capture_and_analyze():
             print("[-] API Xatolik qaytardi:", response.status_code)
     except Exception as e:
         print("[-] Server bilan ulanishda xatolik:", str(e))
+
+    # Vaqtinchalik rasmni o'chiramiz
+    if os.path.exists(screenshot_path):
+        os.remove(screenshot_path)
+
+
+print("🚀 AutoDiagnostic Desktop Client ishga tushdi!")
+print("📌 Tahlil qilish uchun klaviaturada 'Alt + A' tugmalarini bosing.")
+print("📌 Dasturdan chiqish uchun 'Ctrl + C' bosing.\n")
+
+# Alt + A bosilganda capture_and_analyze funksiyasini chaqiramiz
+keyboard.add_hotkey('alt+a', capture_and_analyze)
+
+# Dastur fonda ishlab turishi uchun
+keyboard.wait()
