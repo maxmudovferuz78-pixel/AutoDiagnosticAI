@@ -38,3 +38,24 @@ def capture_and_analyze():
         "dtc_codes": found_codes,
         "raw_text": raw_text
     }
+
+    try:
+        response = requests.post(API_URL, json=payload)
+        if response.status_code == 200:
+            result = response.json()
+            print("\n================= AI TAHLIL NATIJASI =================")
+            print(f"Mashina: {result.get('car_model')}")
+            print("\n[Tarjima va Kodlar]:")
+            for item in result.get('translated_codes', []):
+                print(f"  • {item.get('code')}: {item.get('description')}")
+
+            print("\n[Ehtimoliy Sabablar]:")
+            for cause in result.get('possible_causes', []):
+                print(f"  • {cause}")
+
+            print("\n[Tekshirish Ketma-ketligi]:")
+            for step in result.get('step_by_step_fix', []):
+                print(f"  • {step}")
+
+            print("\n[Eslatma]:", result.get('note'))
+            print("======================================================")
