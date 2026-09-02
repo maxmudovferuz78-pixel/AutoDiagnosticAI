@@ -59,3 +59,17 @@ def capture_and_analyze():
 
             print("\n[Eslatma]:", result.get('note'))
             print("======================================================")
+        else:
+            print("[-] API Xatolik qaytardi:", response.status_code)
+    except Exception as e:
+        print("[-] Server bilan ulanishda xatolik:", str(e))
+
+    if os.path.exists(screenshot_path):
+        os.remove(screenshot_path)
+
+
+print("\n🚀 AutoDiagnostic Desktop Client ishga tushdi!")
+print("📌 Tahlil qilish uchun klaviaturada 'Alt + A' tugmalarini bosing.\n")
+
+keyboard.add_hotkey('alt+a', capture_and_analyze)
+keyboard.wait()
