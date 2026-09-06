@@ -110,3 +110,24 @@ class SnippingWidget(QWidget):
             self.end = event.pos()
             self.update()
 
+    def mouseReleaseEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton and self.is_selecting:
+            self.is_selecting = False
+            self.hide()
+            select_rect = QRect(self.begin, self.end).normalized()
+
+            if select_rect.width() > 10 and select_rect.height() > 10:
+                # Haqiqiy piksel o'lchamida qirqib olish
+                real_crop_rect = QRect(
+                    int(select_rect.x() * self.device_ratio),
+                    int(select_rect.y() * self.device_ratio),
+                    int(select_rect.width() * self.device_ratio),
+                    int(select_rect.height() * self.device_ratio)
+                )
+                cropped = self.screen_pixmap.copy(real_crop_rect)
+                self.area_selected.emit(cropped)
+
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key.Key_Escape:
+            self.hide()
+
