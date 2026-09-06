@@ -97,3 +97,16 @@ class SnippingWidget(QWidget):
             pen = QPen(QColor('#0056b3'), 2)
             painter.setPen(pen)
             painter.drawRect(select_rect)
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.begin = event.pos()
+            self.end = event.pos()
+            self.is_selecting = True
+            self.update()
+
+    def mouseMoveEvent(self, event):
+        if self.is_selecting:
+            self.end = event.pos()
+            self.update()
+
