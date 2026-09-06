@@ -78,3 +78,22 @@ class SnippingWidget(QWidget):
         rect = self.rect()
         painter.drawPixmap(rect, self.screen_pixmap)
         painter.fillRect(rect, QColor(0, 0, 0, 100))
+
+        if self.is_selecting:
+            select_rect = QRect(self.begin, self.end).normalized()
+
+            # Tanlangan joyni ravshan qilib ko'rsatish
+            # Scale ratio hisobga olingan holda pixmap qirqish rect-i:
+            crop_rect = QRect(
+                int(select_rect.x() * self.device_ratio),
+                int(select_rect.y() * self.device_ratio),
+                int(select_rect.width() * self.device_ratio),
+                int(select_rect.height() * self.device_ratio)
+            )
+
+            cropped_sub = self.screen_pixmap.copy(crop_rect)
+            painter.drawPixmap(select_rect, cropped_sub)
+
+            pen = QPen(QColor('#0056b3'), 2)
+            painter.setPen(pen)
+            painter.drawRect(select_rect)
