@@ -171,3 +171,11 @@ class CaptureThread(QThread):
             self.error_signal.emit(f"Ulanishda xatolik: {str(e)}")
 
 
+# Oq fondagi asosiy diagnostika oynasi
+class DiagnosticOverlay(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.init_ui()
+        self.snipper = SnippingWidget()
+        self.snipper.area_selected.connect(self.process_cropped_image)
+
