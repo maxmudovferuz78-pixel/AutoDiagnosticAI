@@ -132,3 +132,18 @@ class SnippingWidget(QWidget):
             self.hide()
 
 
+# Serverga so'rov yuborish
+class CaptureThread(QThread):
+    finished_signal = pyqtSignal(dict)
+    error_signal = pyqtSignal(str)
+
+    def __init__(self, pixmap):
+        super().__init__()
+        self.pixmap = pixmap
+
+    def run(self):
+        try:
+            temp_path = "snip_temp.png"
+            self.pixmap.save(temp_path)
+
+            from PIL import Image
