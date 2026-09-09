@@ -131,3 +131,4 @@ class SnippingWidget(QWidget):
         if event.key() == Qt.Key.Key_Escape:
             self.hide()
 
+
