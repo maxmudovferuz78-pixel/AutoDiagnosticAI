@@ -147,3 +147,27 @@ class CaptureThread(QThread):
             self.pixmap.save(temp_path)
 
             from PIL import Image
+            raw_text = pytesseract.image_to_string(Image.open(temp_path))
+            dtc_pattern = r'[P|C|B|U]\d{4}'
+            found_codes = list(set(re.findall(dtc_pattern, raw_text)))
+
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
+
+            payload = {
+                "car_model": "Ekrandan aniqlanmoqda",
+                "dtc_codes": found_codes,
+                "raw_text": raw_text
+            }
+
+            response = requests.post(API_URL, json=payload, timeout=30)
+            if response.status_code == 200:
+                self.finished_signal.emit(response.json())
+            else:
+                self.error_signal.emit(f"Server xatosi: STATUS {response.status_code}")
+        except requests.exceptions.Timeout:
+            self.error_signal.emit("AI tahlil qilishga ulgurmadi (Timeout). Qaytadan urinib ko'ring.")
+        except Exception as e:
+            self.error_signal.emit(f"Ulanishda xatolik: {str(e)}")
+
+
