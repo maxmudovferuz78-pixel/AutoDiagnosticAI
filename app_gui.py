@@ -222,3 +222,19 @@ class DiagnosticOverlay(QWidget):
             }
         """)
 
+        layout = QVBoxLayout()
+        title = QLabel("⚡ AutoDiagnostic AI Assistant")
+        layout.addWidget(title)
+
+        self.text_area = QTextBrowser()
+        self.text_area.setHtml(
+            "<p style='color: #6C757D;'>Tahlilni boshlash uchun <b>Alt + A</b> ni bosing va ekrandagi xatolik kodini tanlang.</p>"
+        )
+        layout.addWidget(self.text_area)
+
+        close_btn = QPushButton("Oynani yopish (Esc)")
+        close_btn.clicked.connect(self.hide)
+        layout.addWidget(close_btn)
+
+        self.setLayout(layout)
+
