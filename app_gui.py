@@ -179,3 +179,24 @@ class DiagnosticOverlay(QWidget):
         self.snipper = SnippingWidget()
         self.snipper.area_selected.connect(self.process_cropped_image)
 
+    def init_ui(self):
+        self.setWindowTitle("AutoDiagnostic AI Assistant")
+        self.setGeometry(100, 100, 480, 600)
+        self.setWindowFlags(
+            Qt.WindowType.WindowStaysOnTopHint |
+            Qt.WindowType.Tool
+        )
+
+        # To'liq OQ FON (Light theme) stili
+        self.setStyleSheet("""
+            QWidget {
+                background-color: #FFFFFF;
+                color: #212529;
+                font-family: 'Segoe UI', Arial, sans-serif;
+            }
+            QLabel {
+                font-size: 16px;
+                font-weight: bold;
+                color: #0D6EFD;
+                padding: 4px;
+            }
