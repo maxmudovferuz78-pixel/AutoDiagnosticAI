@@ -238,3 +238,18 @@ class DiagnosticOverlay(QWidget):
 
         self.setLayout(layout)
 
+    def trigger_snip(self):
+        self.hide()
+        self.snipper.start_snipping()
+
+    def process_cropped_image(self, pixmap):
+        self.show()
+        self.activateWindow()
+        self.setFocus()
+        self.text_area.setHtml("<h3 style='color: #FD7E14;'>⏳ Tanlangan soha tahlil qilinmoqda...</h3>")
+
+        self.thread = CaptureThread(pixmap)
+        self.thread.finished_signal.connect(self.display_result)
+        self.thread.error_signal.connect(self.display_error)
+        self.thread.start()
+
