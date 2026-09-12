@@ -253,3 +253,26 @@ class DiagnosticOverlay(QWidget):
         self.thread.error_signal.connect(self.display_error)
         self.thread.start()
 
+    def display_result(self, data):
+        html = f"<h3 style='color: #0D6EFD;'>🚗 Avtomobil: {data.get('car_model', 'Nomaʼlum')}</h3>"
+
+        html += "<h4 style='color: #0D6EFD;'>[KODLAR VA TARJIMA]:</h4><ul>"
+        for code in data.get('translated_codes', []):
+            html += f"<li><b>{code.get('code')}</b>: {code.get('description')}</li>"
+        html += "</ul>"
+
+        html += "<h4 style='color: #D63384;'>[EHTIMOLIY SABABLAR]:</h4><ul>"
+        for cause in data.get('possible_causes', []):
+            html += f"<li>{cause}</li>"
+        html += "</ul>"
+
+        html += "<h4 style='color: #198754;'>[TEKSHIRISH KETMA-KETLIGI]:</h4><ol>"
+        for step in data.get('step_by_step_fix', []):
+            html += f"<li>{step}</li>"
+        html += "</ol>"
+
+        if data.get('note'):
+            html += f"<p style='color: #6F42C1; background-color: #E2D9F3; padding: 6px; border-radius: 4px;'><b>Eslatma:</b> {data.get('note')}</p>"
+
+        self.text_area.setHtml(html)
+
