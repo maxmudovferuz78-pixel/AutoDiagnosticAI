@@ -287,3 +287,11 @@ class DiagnosticOverlay(QWidget):
 import signal
 from PyQt6.QtCore import QTimer
 
+if __name__ == '__main__':
+    # Ctrl + C signalini ushlash uchun
+    signal.signal(signal.SIGINT, signal.SIG_DFL)
+
+    app = QApplication(sys.argv)
+    window = DiagnosticOverlay()
+    window.show()
+
