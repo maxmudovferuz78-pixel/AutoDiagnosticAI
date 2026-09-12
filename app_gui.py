@@ -276,3 +276,14 @@ class DiagnosticOverlay(QWidget):
 
         self.text_area.setHtml(html)
 
+    def display_error(self, err_msg):
+        self.text_area.setHtml(f"<p style='color: #DC3545;'><b>Xatolik:</b> {err_msg}</p>")
+
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key.Key_Escape:
+            self.hide()
+
+
+import signal
+from PyQt6.QtCore import QTimer
+
