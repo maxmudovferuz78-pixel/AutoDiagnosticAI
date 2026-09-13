@@ -197,3 +197,34 @@ class DiagnosticOverlay(QWidget):
             }
         """)
 
+        layout = QVBoxLayout()
+        title = QLabel("⚡ AutoDiagnostic AI Assistant")
+        layout.addWidget(title)
+
+        self.text_area = QTextBrowser()
+        self.text_area.setHtml(
+            "<p style='color: #6C757D;'>Tahlilni boshlash uchun <b>Alt + A</b> ni bosing va ekrandagi xatolik kodini tanlang.</p>"
+        )
+        layout.addWidget(self.text_area)
+
+        close_btn = QPushButton("Oynani yopish (Esc)")
+        close_btn.clicked.connect(self.hide)
+        layout.addWidget(close_btn)
+
+        self.setLayout(layout)
+
+    def trigger_snip(self):
+        self.hide()
+        self.snipper.start_snipping()
+
+    def process_cropped_image(self, pixmap):
+        self.show()
+        self.activateWindow()
+        self.setFocus()
+        self.text_area.setHtml("<h3 style='color: #FD7E14;'>⏳ Tanlangan soha tahlil qilinmoqda...</h3>")
+
+        self.thread = CaptureThread(pixmap)
+        self.thread.finished_signal.connect(self.display_result)
+        self.thread.error_signal.connect(self.display_error)
+        self.thread.start()
+
