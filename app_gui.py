@@ -49,3 +49,56 @@ class SnippingWidget(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowFlags(
+            Qt.WindowType.FramelessWindowHint |
+            Qt.WindowType.WindowStaysOnTopHint |
+            Qt.WindowType.Tool
+        )
+        self.setCursor(Qt.CursorShape.CrossCursor)
+        self.begin = QPoint()
+        self.end = QPoint()
+        self.is_selecting = False
+        self.screen_pixmap = None
+
+    def start_snipping(self):
+        screen = QApplication.primaryScreen()
+        if screen:
+            self.screen_pixmap = screen.grabWindow(0)
+            self.setGeometry(screen.geometry())
+            self.show()
+            self.activateWindow()
+
+    def paintEvent(self, event):
+        if not self.screen_pixmap:
+            return
+        painter = QPainter(self)
+        painter.drawPixmap(0, 0, self.screen_pixmap)
+        painter.fillRect(self.rect(), QColor(0, 0, 0, 100))
+
+        if self.is_selecting:
+            rect = QRect(self.begin, self.end).normalized()
+            painter.drawPixmap(rect, self.screen_pixmap, rect)
+            pen = QPen(QColor('#0056b3'), 2)
+            painter.setPen(pen)
+            painter.drawRect(rect)
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.begin = event.pos()
+            self.end = event.pos()
+            self.is_selecting = True
+            self.update()
+
+    def mouseMoveEvent(self, event):
+        if self.is_selecting:
+            self.end = event.pos()
+            self.update()
+
+    def mouseReleaseEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton and self.is_selecting:
+            self.is_selecting = False
+            self.hide()
+            rect = QRect(self.begin, self.end).normalized()
+            if rect.width() > 10 and rect.height() > 10:
+                cropped = self.screen_pixmap.copy(rect)
+                self.area_selected.emit(cropped)
+
