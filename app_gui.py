@@ -283,3 +283,24 @@ class DiagnosticOverlay(QWidget):
         if event.key() == Qt.Key.Key_Escape:
             self.hide()
 
+
+import signal
+from PyQt6.QtCore import QTimer
+
+if __name__ == '__main__':
+    # Ctrl + C signalini ushlash uchun
+    signal.signal(signal.SIGINT, signal.SIG_DFL)
+
+    app = QApplication(sys.argv)
+    window = DiagnosticOverlay()
+    window.show()
+
+    # Python signallarini PyQt event loop'iga o'tkazish uchun taymer
+    timer = QTimer()
+    timer.start(500)
+    timer.timeout.connect(lambda: None)
+
+    hotkey_signaler.triggered.connect(window.trigger_snip)
+    keyboard.add_hotkey('alt+a', lambda: hotkey_signaler.triggered.emit())
+
+    sys.exit(app.exec())
