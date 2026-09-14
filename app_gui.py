@@ -6,20 +6,20 @@ import pytesseract
 import keyboard
 import ctypes
 
-from PyQt6.QtWidgets import (
-    QApplication, QWidget, QVBoxLayout, QLabel, QTextBrowser, QPushButton
-)
-from PyQt6.QtCore import Qt, QThread, pyqtSignal, QObject, QRect, QPoint
-from PyQt6.QtGui import QPainter, QColor, QPen, QPixmap
-
-# Windows DPI scaling masshtab muammosini aniq to'g'rilash (Windows 8.1 va undan yuqori)
+# 1. QApplication yaratilishidan avval Windows DPI awareness-ni sozlaymiz
 try:
-    ctypes.windll.shcore.SetProcessDpiAwareness(2)  # PROCESS_PER_MONITOR_DPI_AWARE
+    ctypes.windll.shcore.SetProcessDpiAwareness(2)  # Process_Per_Monitor_DPI_Aware
 except Exception:
     try:
         ctypes.windll.user32.SetProcessDPIAware()
     except Exception:
         pass
+
+from PyQt6.QtWidgets import (
+    QApplication, QWidget, QVBoxLayout, QLabel, QTextBrowser, QPushButton
+)
+from PyQt6.QtCore import Qt, QThread, pyqtSignal, QObject, QRect, QPoint
+from PyQt6.QtGui import QPainter, QColor, QPen, QPixmap
 
 # Tesseract-OCR manzilini tekshirish
 possible_paths = [
@@ -42,7 +42,7 @@ class HotkeySignaler(QObject):
 hotkey_signaler = HotkeySignaler()
 
 
-# Skrinshot qirqib olish oynasi (Windows+Shift+S)
+# Skrinshot qirqib olish oynasi (Windows+Shift+S kabi)
 class SnippingWidget(QWidget):
     area_selected = pyqtSignal(QPixmap)
 
@@ -58,10 +58,12 @@ class SnippingWidget(QWidget):
         self.end = QPoint()
         self.is_selecting = False
         self.screen_pixmap = None
+        self.device_ratio = 1.0
 
     def start_snipping(self):
         screen = QApplication.primaryScreen()
         if screen:
+            self.device_ratio = screen.devicePixelRatio()  # Ekran masshtabi nisbati (masalan, 1.25 yoki 1.5)
             self.screen_pixmap = screen.grabWindow(0)
             self.setGeometry(screen.geometry())
             self.show()
@@ -71,200 +73,31 @@ class SnippingWidget(QWidget):
         if not self.screen_pixmap:
             return
         painter = QPainter(self)
-        painter.drawPixmap(0, 0, self.screen_pixmap)
-        painter.fillRect(self.rect(), QColor(0, 0, 0, 100))
+
+        # Ekran doirasini to'g'ri chizish
+        rect = self.rect()
+        painter.drawPixmap(rect, self.screen_pixmap)
+        painter.fillRect(rect, QColor(0, 0, 0, 100))
 
         if self.is_selecting:
-            rect = QRect(self.begin, self.end).normalized()
-            painter.drawPixmap(rect, self.screen_pixmap, rect)
+            select_rect = QRect(self.begin, self.end).normalized()
+
+            # Tanlangan joyni ravshan qilib ko'rsatish
+            # Scale ratio hisobga olingan holda pixmap qirqish rect-i:
+            crop_rect = QRect(
+                int(select_rect.x() * self.device_ratio),
+                int(select_rect.y() * self.device_ratio),
+                int(select_rect.width() * self.device_ratio),
+                int(select_rect.height() * self.device_ratio)
+            )
+
+            cropped_sub = self.screen_pixmap.copy(crop_rect)
+            painter.drawPixmap(select_rect, cropped_sub)
+
             pen = QPen(QColor('#0056b3'), 2)
             painter.setPen(pen)
-            painter.drawRect(rect)
+            painter.drawRect(select_rect)
 
     def mousePressEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:
             self.begin = event.pos()
-            self.end = event.pos()
-            self.is_selecting = True
-            self.update()
-
-    def mouseMoveEvent(self, event):
-        if self.is_selecting:
-            self.end = event.pos()
-            self.update()
-
-    def mouseReleaseEvent(self, event):
-        if event.button() == Qt.MouseButton.LeftButton and self.is_selecting:
-            self.is_selecting = False
-            self.hide()
-            rect = QRect(self.begin, self.end).normalized()
-            if rect.width() > 10 and rect.height() > 10:
-                cropped = self.screen_pixmap.copy(rect)
-                self.area_selected.emit(cropped)
-
-    def keyPressEvent(self, event):
-        if event.key() == Qt.Key.Key_Escape:
-            self.hide()
-
-
-# Serverga so'rov yuborish
-class CaptureThread(QThread):
-    finished_signal = pyqtSignal(dict)
-    error_signal = pyqtSignal(str)
-
-    def __init__(self, pixmap):
-        super().__init__()
-        self.pixmap = pixmap
-
-    def run(self):
-        try:
-            temp_path = "snip_temp.png"
-            self.pixmap.save(temp_path)
-
-            from PIL import Image
-            raw_text = pytesseract.image_to_string(Image.open(temp_path))
-            dtc_pattern = r'[P|C|B|U]\d{4}'
-            found_codes = list(set(re.findall(dtc_pattern, raw_text)))
-
-            if os.path.exists(temp_path):
-                os.remove(temp_path)
-
-            payload = {
-                "car_model": "Ekrandan aniqlanmoqda",
-                "dtc_codes": found_codes,
-                "raw_text": raw_text
-            }
-
-            response = requests.post(API_URL, json=payload, timeout=30)
-            if response.status_code == 200:
-                self.finished_signal.emit(response.json())
-            else:
-                self.error_signal.emit(f"Server xatosi: STATUS {response.status_code}")
-        except requests.exceptions.Timeout:
-            self.error_signal.emit("AI tahlil qilishga ulgurmadi (Timeout). Qaytadan urinib ko'ring.")
-        except Exception as e:
-            self.error_signal.emit(f"Ulanishda xatolik: {str(e)}")
-
-
-# Oq fondagi asosiy diagnostika oynasi
-class DiagnosticOverlay(QWidget):
-    def __init__(self):
-        super().__init__()
-        self.init_ui()
-        self.snipper = SnippingWidget()
-        self.snipper.area_selected.connect(self.process_cropped_image)
-
-    def init_ui(self):
-        self.setWindowTitle("AutoDiagnostic AI Assistant")
-        self.setGeometry(100, 100, 480, 600)
-        self.setWindowFlags(
-            Qt.WindowType.WindowStaysOnTopHint |
-            Qt.WindowType.Tool
-        )
-
-        # To'liq OQ FON (Light theme) stili
-        self.setStyleSheet("""
-            QWidget {
-                background-color: #FFFFFF;
-                color: #212529;
-                font-family: 'Segoe UI', Arial, sans-serif;
-            }
-            QLabel {
-                font-size: 16px;
-                font-weight: bold;
-                color: #0D6EFD;
-                padding: 4px;
-            }
-            QTextBrowser {
-                background-color: #F8F9FA;
-                border: 1px solid #CED4DA;
-                border-radius: 6px;
-                padding: 12px;
-                font-size: 13px;
-                color: #212529;
-            }
-            QPushButton {
-                background-color: #DC3545;
-                color: #FFFFFF;
-                font-weight: bold;
-                border-radius: 6px;
-                padding: 8px;
-                border: none;
-                font-size: 13px;
-            }
-            QPushButton:hover {
-                background-color: #BB2D3B;
-            }
-        """)
-
-        layout = QVBoxLayout()
-        title = QLabel("⚡ AutoDiagnostic AI Assistant")
-        layout.addWidget(title)
-
-        self.text_area = QTextBrowser()
-        self.text_area.setHtml(
-            "<p style='color: #6C757D;'>Tahlilni boshlash uchun <b>Alt + A</b> ni bosing va ekrandagi xatolik kodini tanlang.</p>"
-        )
-        layout.addWidget(self.text_area)
-
-        close_btn = QPushButton("Oynani yopish (Esc)")
-        close_btn.clicked.connect(self.hide)
-        layout.addWidget(close_btn)
-
-        self.setLayout(layout)
-
-    def trigger_snip(self):
-        self.hide()
-        self.snipper.start_snipping()
-
-    def process_cropped_image(self, pixmap):
-        self.show()
-        self.activateWindow()
-        self.setFocus()
-        self.text_area.setHtml("<h3 style='color: #FD7E14;'>⏳ Tanlangan soha tahlil qilinmoqda...</h3>")
-
-        self.thread = CaptureThread(pixmap)
-        self.thread.finished_signal.connect(self.display_result)
-        self.thread.error_signal.connect(self.display_error)
-        self.thread.start()
-
-    def display_result(self, data):
-        html = f"<h3 style='color: #0D6EFD;'>🚗 Avtomobil: {data.get('car_model', 'Nomaʼlum')}</h3>"
-
-        html += "<h4 style='color: #0D6EFD;'>[KODLAR VA TARJIMA]:</h4><ul>"
-        for code in data.get('translated_codes', []):
-            html += f"<li><b>{code.get('code')}</b>: {code.get('description')}</li>"
-        html += "</ul>"
-
-        html += "<h4 style='color: #D63384;'>[EHTIMOLIY SABABLAR]:</h4><ul>"
-        for cause in data.get('possible_causes', []):
-            html += f"<li>{cause}</li>"
-        html += "</ul>"
-
-        html += "<h4 style='color: #198754;'>[TEKSHIRISH KETMA-KETLIGI]:</h4><ol>"
-        for step in data.get('step_by_step_fix', []):
-            html += f"<li>{step}</li>"
-        html += "</ol>"
-
-        if data.get('note'):
-            html += f"<p style='color: #6F42C1; background-color: #E2D9F3; padding: 6px; border-radius: 4px;'><b>Eslatma:</b> {data.get('note')}</p>"
-
-        self.text_area.setHtml(html)
-
-    def display_error(self, err_msg):
-        self.text_area.setHtml(f"<p style='color: #DC3545;'><b>Xatolik:</b> {err_msg}</p>")
-
-    def keyPressEvent(self, event):
-        if event.key() == Qt.Key.Key_Escape:
-            self.hide()
-
-
-if __name__ == '__main__':
-    app = QApplication(sys.argv)
-    window = DiagnosticOverlay()
-    window.show()
-
-    hotkey_signaler.triggered.connect(window.trigger_snip)
-    keyboard.add_hotkey('alt+a', lambda: hotkey_signaler.triggered.emit())
-
-    sys.exit(app.exec())
