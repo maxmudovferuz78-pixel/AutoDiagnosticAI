@@ -141,3 +141,84 @@ class CaptureThread(QThread):
         super().__init__()
         self.pixmap = pixmap
 
+    def run(self):
+        try:
+            temp_path = "snip_temp.png"
+            self.pixmap.save(temp_path)
+
+            from PIL import Image
+            raw_text = pytesseract.image_to_string(Image.open(temp_path))
+            dtc_pattern = r'[P|C|B|U]\d{4}'
+            found_codes = list(set(re.findall(dtc_pattern, raw_text)))
+
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
+
+            payload = {
+                "car_model": "Ekrandan aniqlanmoqda",
+                "dtc_codes": found_codes,
+                "raw_text": raw_text
+            }
+
+            response = requests.post(API_URL, json=payload, timeout=30)
+            if response.status_code == 200:
+                self.finished_signal.emit(response.json())
+            else:
+                self.error_signal.emit(f"Server xatosi: STATUS {response.status_code}")
+        except requests.exceptions.Timeout:
+            self.error_signal.emit("AI tahlil qilishga ulgurmadi (Timeout). Qaytadan urinib ko'ring.")
+        except Exception as e:
+            self.error_signal.emit(f"Ulanishda xatolik: {str(e)}")
+
+
+# Oq fondagi asosiy diagnostika oynasi
+class DiagnosticOverlay(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.init_ui()
+        self.snipper = SnippingWidget()
+        self.snipper.area_selected.connect(self.process_cropped_image)
+
+    def init_ui(self):
+        self.setWindowTitle("AutoDiagnostic AI Assistant")
+        self.setGeometry(100, 100, 480, 600)
+        self.setWindowFlags(
+            Qt.WindowType.WindowStaysOnTopHint |
+            Qt.WindowType.Tool
+        )
+
+        # To'liq OQ FON (Light theme) stili
+        self.setStyleSheet("""
+            QWidget {
+                background-color: #FFFFFF;
+                color: #212529;
+                font-family: 'Segoe UI', Arial, sans-serif;
+            }
+            QLabel {
+                font-size: 16px;
+                font-weight: bold;
+                color: #0D6EFD;
+                padding: 4px;
+            }
+            QTextBrowser {
+                background-color: #F8F9FA;
+                border: 1px solid #CED4DA;
+                border-radius: 6px;
+                padding: 12px;
+                font-size: 13px;
+                color: #212529;
+            }
+            QPushButton {
+                background-color: #DC3545;
+                color: #FFFFFF;
+                font-weight: bold;
+                border-radius: 6px;
+                padding: 8px;
+                border: none;
+                font-size: 13px;
+            }
+            QPushButton:hover {
+                background-color: #BB2D3B;
+            }
+        """)
+
